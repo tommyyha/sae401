@@ -1,0 +1,148 @@
+{% extends 'base.html.twig' %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.comment-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const publicationId = formData.get('publicationId');
+            const content = formData.get('content');
+
+            fetch('/api/commentaire', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: content, publicationId: publicationId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) {
+                    console.error(data.error);
+                } else {
+                window.location.reload();
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+        });
+    });
+    document.getElementById('commentForm').addEventListener('submit', function() {
+        // Trouvez le bouton de soumission dans le formulaire
+        var submitButton = this.querySelector('button[type="submit"]');
+        // Désactivez le bouton
+        submitButton.disabled = true;
+        // Changez le texte du bouton pour informer l'utilisateur
+        submitButton.textContent = 'Envoi en cours...';
+    });
+document.querySelectorAll('.like-btn').forEach(button => {
+    button.addEventListener('click', function(e) {
+        const publicationId = this.dataset.publicationId;
+        fetch(`/like/publication/${publicationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ like: true }) // Assurez-vous que cela correspond à ce que votre backend attend
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const likesCountElement = this.previousElementSibling;
+                let likesCount = parseInt(likesCountElement.textContent);
+                if (this.textContent === 'Like') {
+                    likesCountElement.textContent = `${++likesCount} likes`;
+                    this.textContent = 'Liked';
+                } else {
+                    likesCountElement.textContent = `${--likesCount} likes`;
+                    this.textContent = 'Like';
+                }
+            } else {
+                alert('Une erreur est survenue.');
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    });
+});
+
+
+});
+</script>
+{% endblock %}
+{% block body %}
+    <h2>Profil de l’utilisateur</h2>
+    <p>Nombre de publications publiées : {{ nombrePublications }}</p>
+    <p>Nombre de followers : {{ followersCount }}</p>
+<p>Nombre d'abonnements : {{ followingsCount }}</p>
+<h2>Abonnés</h2>
+<ul>
+    {% for follower in followers %}
+        <li>{{ follower.FollowerID.username }}</li>
+    {% endfor %}
+</ul>
+
+<h2>Abonnements</h2>
+<ul>
+    {% for following in followings %}
+        <li>{{ following.UserID.username }}</li>
+    {% endfor %}
+</ul>
+
+{% if utilisateur.ecoScore is not null %}
+    <p>Votre éco-score est : {{ utilisateur.ecoScore }}</p>
+{% else %}
+    <p>Vous n'avez pas encore passé le questionnaire éco-score.</p>
+    <a href="{{ path('eco_questionnaire') }}">Passer le questionnaire éco-score</a>
+{% endif %}
+    <p>Nom d'utilisateur: {{ utilisateur.username }}</p>
+    <p>Bio: {{ utilisateur.Bio }}</p>
+    <p>Email: {{ utilisateur.email }}</p>
+
+        <img src="{{ asset('/uploads/' ~ utilisateur.ProfilePicture) }}" alt="Photo de profile">
+        <img src="{{ asset('/uploads/' ~ utilisateur.ProfileCover) }}" alt="Photo de cover">
+
+
+         <a href="{{ path('app_modify_profile') }}">Modifier le profil</a>
+
+<h2>Publications</h2>
+<div>
+    {% for publication in publications %}
+        <div>
+            <p>{{ publication.DateTime|date('Y-m-d H:i') }}</p>
+            <p>{{ publication.postType }}</p>
+
+            {% if publication.fileType == 'image' %}
+
+                <img src="{{ asset('/uploads/' ~ publication.postContent) }}" alt="Image de publication">
+
+            {% elseif publication.fileType == 'video' %}
+                <video controls src="{{ asset('/uploads/' ~ publication.postContent) }}"></video>
+            {% endif %}
+             <a href="{{ path('publication_edit', {'id': publication.id}) }}" class="btn btn-primary">Modifier</a>
+             <a href="{{ path('publication_delete', {'id': publication.id}) }}" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette publication ?');">Supprimer</a>
+                        <div>
+                {% for commentaire in publication.commentaires %}
+                    <p>
+                        <img src="{{ asset('uploads/' ~ commentaire.userID.profilePicture) }}" alt="Profil de {{ commentaire.userID.username |e }}" style="width: 25px;">
+                        {{ commentaire.userID.username |e }}: {{ commentaire.content |e }}
+                        <span style="font-size: 10px;">{{ commentaire.dateTime|date('Y-m-d H:i') }}</span>
+                    </p>
+                {% endfor %}
+            </div>
+
+            <form id="commentForm" class="comment-form" data-publication-id="{{ publication.id }}" action="" method="post">
+                <input type="text" name="content" placeholder="Ajoutez un commentaire..." required>
+                <input type="hidden" name="publicationId" value="{{ publication.id }}">
+                <button type="submit">Commenter</button>
+            </form>
+        </div>
+    {% else %}
+        <p>Aucune publication à afficher.</p>
+    {% endfor %}
+</div>
+
+    {# Afficher d'autres informations de l'utilisateur comme vous le souhaitez #}
+{% endblock %}
+

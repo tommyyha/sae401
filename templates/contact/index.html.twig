@@ -1,0 +1,11 @@
+{# templates/contact/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+
+{% block body %}
+<h1>Contactez-nous</h1>
+
+{{ form_start(contact_form) }}
+    {{ form_widget(contact_form) }}
+{{ form_end(contact_form) }}
+{% endblock %}

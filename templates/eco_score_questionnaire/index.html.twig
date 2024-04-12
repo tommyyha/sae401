@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+
+
+{% block body %}
+<h2>Eco-Questionnaire</h2>
+{{ form_start(form) }}
+{{ form_widget(form) }}
+<button class="btn btn-primary">Soumettre</button>
+{{ form_end(form) }}
+{% endblock %}

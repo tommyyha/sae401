@@ -1,0 +1,13 @@
+{# templates/utilisateur/modifier.html.twig #}
+
+{% extends 'base.html.twig' %}
+
+
+{% block body %}
+<h2>Modifier le Profil</h2>
+
+{{ form_start(utilisateurForm) }}
+    {{ form_widget(utilisateurForm) }}
+    <button class="btn btn-primary">Enregistrer les modifications</button>
+{{ form_end(utilisateurForm) }}
+{% endblock %}

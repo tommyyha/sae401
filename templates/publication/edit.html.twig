@@ -1,0 +1,15 @@
+{# templates/publication/edit.html.twig #}
+{% extends 'base.html.twig' %}
+
+
+{% block body %}
+<div class="container">
+    <h1>Modifier la publication</h1>
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit" class="btn btn-primary">Sauvegarder les modifications</button>
+    {{ form_end(form) }}
+
+    <a href="{{ path('app_utilisateur') }}" class="btn btn-link">Retour au profil</a>
+</div>
+{% endblock %}

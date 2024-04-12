@@ -1,0 +1,130 @@
+{% extends 'base.html.twig' %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.comment-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const publicationId = formData.get('publicationId');
+            const content = formData.get('content');
+
+            fetch('/api/commentaire', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: content, publicationId: publicationId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.error) {
+                    console.error(data.error);
+                } else {
+                window.location.reload();
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+        });
+    });
+    document.getElementById('commentForm').addEventListener('submit', function() {
+        // Trouvez le bouton de soumission dans le formulaire
+        var submitButton = this.querySelector('button[type="submit"]');
+        // Désactivez le bouton
+        submitButton.disabled = true;
+        // Changez le texte du bouton pour informer l'utilisateur
+        submitButton.textContent = 'Envoi en cours...';
+    });
+
+document.querySelectorAll('.like-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const publicationId = this.getAttribute('data-publication-id');
+        const liked = this.getAttribute('data-liked') === 'true';
+
+        fetch(`/like/${publicationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest' // Si vous utilisez des sessions Symfony
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data.message);
+            // Actualiser le DOM en conséquence, par exemple en mettant à jour le nombre de likes
+        })
+        .catch(error => {
+            console.error('There was an error!', error);
+        });
+    });
+});
+});
+
+</script>
+{% endblock %}
+
+{% block body %}
+<h2>Publications</h2>
+<div>
+    {% for data in publicationsData %}
+        <div>
+            <p>Posté par : {{ data.publication.userID.username | escape }}</p>
+            <a href="{{ path('app_profil', {username: data.publication.userID.username}) }}">
+            <img src="{{ asset('uploads/' ~ data.publication.userID.profilePicture) }}" alt="Profil de {{ data.publication.userID.username | escape }}" style="width: 40px;"></a>
+
+            <p>{{ data.publication.dateTime|date('Y-m-d H:i') }}</p>
+            <p>{{ data.publication.postType | escape }}</p>
+
+            {% if data.fileType == 'image' %}
+                <img src="{{ asset('uploads/' ~ data.publication.postContent) }}" alt="Publication">
+            {% elseif data.fileType == 'video' %}
+                <video controls src="{{ asset('uploads/' ~ data.publication.postContent) }}"></video>
+            {% endif %}
+            {% if data.isLikedByCurrentUser %}
+            <button onclick="location.href='{{ path('like_publication', {'id': data.publication.id}) }}'">DisLike</button>
+            {% else %}
+                <button onclick="location.href='{{ path('like_publication', {'id': data.publication.id}) }}'">Like</button>
+            {% endif %}
+            <span>{{ data.likesCount }} likes</span>
+             {% if data.likers|length > 0 %}
+            <p>Liked by:</p>
+            <ul>
+            {% for liker in data.likers %}
+                    <img src="{{ asset('uploads/' ~ liker.ProfilePicture) }}" alt="profil" style="width: 25px;">
+                    <li>{{ liker.Username }}</li>
+                
+            {% endfor %}
+
+            </ul>
+            {% endif %}
+
+            <!-- The comments section might need adjustment based on how you store and access comments in your data model -->
+            <div>
+                {% for commentaire in data.publication.commentaires %}
+                    <p>
+                        <img src="{{ asset('uploads/' ~ commentaire.userID.profilePicture) }}" alt="Profil de {{ commentaire.userID.username | escape }}" style="width: 25px;">
+                        {{ commentaire.userID.username | escape }}: {{ commentaire.content | escape }}
+                        <span style="font-size: 10px;">{{ commentaire.dateTime|date('Y-m-d H:i') }}</span>
+                    </p>
+                {% endfor %}
+            </div>
+
+            <form id="commentForm" class="comment-form" data-publication-id="{{ data.publication.id }}" action="" method="post">
+                <input type="text" name="content" placeholder="Ajoutez un commentaire..." required>
+                <input type="hidden" name="publicationId" value="{{ data.publication.id }}">
+                <button type="submit">Commenter</button>
+            </form>
+        </div>
+    {% else %}
+        <p>Cet utilisateur n'a pas encore publié de contenu.</p>
+    {% endfor %}
+</div>
+{% endblock %}
+
